@@ -30,6 +30,9 @@ namespace KinectClient
         private Connection _connection;
         private KinectSensor _sensor;
         private SkeletonRenderer _renderer;
+
+        private bool send = true;
+
         #endregion
 
 
@@ -38,7 +41,9 @@ namespace KinectClient
         {
             InitializeComponent();
             InitializeConnection();
-            InitializeKinect();            
+            InitializeKinect();
+
+            Closing += new System.ComponentModel.CancelEventHandler(MainWindow_Closing);
         }
         #endregion
 
@@ -50,50 +55,66 @@ namespace KinectClient
                 _sensor = potentialSensor;
                 break;
             }
+
             if (_sensor != null)
             {
                 _sensor.SkeletonStream.Enable();
                 _sensor.DepthStream.Enable();
-
-                _sensor.Start();
-
-                _sensor.ElevationAngle = -10;
-                Thread.Sleep(100);
-                _sensor.ElevationAngle = 10;
-                Thread.Sleep(100);
-                _sensor.ElevationAngle = 0;
-                Thread.Sleep(100);
-
                 _sensor.SkeletonFrameReady += new EventHandler<SkeletonFrameReadyEventArgs>(_sensor_SkeletonFrameReady);
 
+                try 
+                { 
+                    _sensor.Start();
+
+                    _sensor.ElevationAngle = -10;
+                    Thread.Sleep(100);
+                    _sensor.ElevationAngle = 10;
+                    Thread.Sleep(100);
+                    _sensor.ElevationAngle = 0;
+                    Thread.Sleep(100);
+
+                    this.kinectStatusBarText.Text = "Kinect Status: Ready";
+                }
+
+                catch (IOException) 
+                { 
+                    _sensor = null; 
+                }
             }
-            else
+            
+            if(_sensor == null)
             {
-                //TODO Add Kinect Connection Detection
+                this.kinectStatusBarText.Text = "Kinect Status: No Kinect Ready Found!";
             }
         }
 
         void _sensor_SkeletonFrameReady(object sender, SkeletonFrameReadyEventArgs e)
         {
-            using (SkeletonFrame skeletonFrame = e.OpenSkeletonFrame())
+            if (send)
             {
-                if (skeletonFrame != null)
+                using (SkeletonFrame skeletonFrame = e.OpenSkeletonFrame())
                 {
-                    Skeleton[] skels = new Skeleton[skeletonFrame.SkeletonArrayLength];
-                    skeletonFrame.CopySkeletonDataTo(skels);
-                    byte[] data = objectToByteArray(skels);
-
-                    Message message = new Message("SkeletonFrame");
-                    message.AddField("Skeletons", data);
-                    this._connection.SendMessage(message);
-
-                    this.Dispatcher.Invoke(new Action(delegate()
+                    if (skeletonFrame != null)
                     {
-                        _renderer = new SkeletonRenderer(skeletonImage, e, _sensor);
-                    }));
-                    
+                        Skeleton[] skels = new Skeleton[skeletonFrame.SkeletonArrayLength];
+                        skeletonFrame.CopySkeletonDataTo(skels);
+                        byte[] data = objectToByteArray(skels);
+
+                        Message message = new Message("SkeletonFrame");
+                        message.AddField("Skeletons", data);
+                        this._connection.SendMessage(message);
+
+                        this.Dispatcher.Invoke(new Action(delegate()
+                        {
+                            _renderer = new SkeletonRenderer(skeletonImage, e, _sensor);
+                        }));
+
+                    }
                 }
+                send = false;
             }
+            else
+                send = true;
         }
         #endregion
 
@@ -123,8 +144,15 @@ namespace KinectClient
             if (this._connection != null)
             {
                 this._connection.MessageReceived += new ConnectionMessageEventHandler(OnMessageReceived);
-                // Start connection -- networking thread
-                this._connection.Start();
+                
+                this.Dispatcher.Invoke(
+                    new Action(
+                        delegate()
+                        {
+                            this.connectionStatusBarText.Text = "Connection Status: Connected";
+                        }));
+
+                this._connection.Start();                
             }
             else
             {
@@ -133,7 +161,9 @@ namespace KinectClient
                     new Action(
                         delegate()
                         {
-                            this.Close();
+                            this.connectionStatusBarText.Text = "Connection Status: Pending";
+                            this.InitializeConnection();
+                            //this.Close();
                         }
                 ));
             }
@@ -156,5 +186,15 @@ namespace KinectClient
             }
         }
         #endregion
+
+        #region Window Event Handlers
+        
+        void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            if (_connection != null) { _connection.Stop(); }
+            if (_sensor != null) { _sensor.Stop(); }
+        }
+
+        #endregion 
     }
 }

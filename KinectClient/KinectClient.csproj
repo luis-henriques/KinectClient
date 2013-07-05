@@ -36,7 +36,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>Kinect.ico</ApplicationIcon>
+    <ApplicationIcon>Images\Kinect.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="GroupLab.iNetwork">
@@ -101,7 +101,13 @@
     <AppDesigner Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="Kinect.ico" />
+    <Resource Include="Images\Kinect.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\MSEAPI.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Status.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
