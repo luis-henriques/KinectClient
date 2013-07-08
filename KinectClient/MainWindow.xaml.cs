@@ -30,6 +30,7 @@ namespace KinectClient
         private Connection _connection;
         private KinectSensor _sensor;
         private SkeletonRenderer _renderer;
+        private bool connectionReady = false;
 
         private bool send = true;
 
@@ -90,7 +91,8 @@ namespace KinectClient
 
         void _sensor_SkeletonFrameReady(object sender, SkeletonFrameReadyEventArgs e)
         {
-            if (send)
+
+            if (send && connectionReady)
             {
                 using (SkeletonFrame skeletonFrame = e.OpenSkeletonFrame())
                 {
@@ -152,7 +154,8 @@ namespace KinectClient
                             this.connectionStatusBarText.Text = "Connection Status: Connected";
                         }));
 
-                this._connection.Start();                
+                this._connection.Start();
+                connectionReady = true;
             }
             else
             {
