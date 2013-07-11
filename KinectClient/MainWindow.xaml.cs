@@ -104,6 +104,7 @@ namespace KinectClient
 
                         Message message = new Message("SkeletonFrame");
                         message.AddField("Skeletons", data);
+                        message.AddField("KinectID", System.Environment.MachineName);
                         this._connection.SendMessage(message);
 
                         this.Dispatcher.Invoke(new Action(delegate()

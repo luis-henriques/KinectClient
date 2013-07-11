@@ -39,10 +39,7 @@
     <ApplicationIcon>Images\Kinect.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="GroupLab.iNetwork">
-      <HintPath>..\..\..\Visual Studio 2010\Projects\iNetwork\GroupLab.iNetwork\obj\Debug\GroupLab.iNetwork.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.Kinect, Version=1.6.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.Kinect, Version=1.7.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
@@ -108,6 +105,12 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Images\Status.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\GroupLab.iNetwork\GroupLab.iNetwork.csproj">
+      <Project>{4A3D0309-0201-4521-987F-7BF3FCE2FBCF}</Project>
+      <Name>GroupLab.iNetwork</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
