@@ -114,10 +114,7 @@ namespace KinectClient
 
                     }
                 }
-                send = false;
             }
-            else
-                send = true;
         }
         #endregion
 
@@ -185,6 +182,14 @@ namespace KinectClient
                 {
                     default:
                         // Do nothing
+                        break;
+
+                    case "StartKinectStream":
+                        send = true;
+                        break;
+
+                    case "StopKinectStream":
+                        send = false;
                         break;
                 }
             }
