@@ -91,12 +91,16 @@ namespace KinectClient
 
         void _sensor_SkeletonFrameReady(object sender, SkeletonFrameReadyEventArgs e)
         {
-
-            if (send && connectionReady)
+            using (SkeletonFrame skeletonFrame = e.OpenSkeletonFrame())
             {
-                using (SkeletonFrame skeletonFrame = e.OpenSkeletonFrame())
+                if (skeletonFrame != null)
                 {
-                    if (skeletonFrame != null)
+                    this.Dispatcher.Invoke(new Action(delegate()
+                    {
+                        _renderer = new SkeletonRenderer(skeletonImage, e, _sensor);
+                    }));
+
+                    if (send && connectionReady)
                     {
                         Skeleton[] skels = new Skeleton[skeletonFrame.SkeletonArrayLength];
                         skeletonFrame.CopySkeletonDataTo(skels);
@@ -106,12 +110,6 @@ namespace KinectClient
                         message.AddField("Skeletons", data);
                         message.AddField("KinectID", System.Environment.MachineName);
                         this._connection.SendMessage(message);
-
-                        this.Dispatcher.Invoke(new Action(delegate()
-                        {
-                            _renderer = new SkeletonRenderer(skeletonImage, e, _sensor);
-                        }));
-
                     }
                 }
             }
@@ -134,7 +132,7 @@ namespace KinectClient
         #region Connection Initialization
         private void InitializeConnection()
         {
-            Connection.Discover("KinectServer", new SingleConnectionDiscoveryEventHandler(OnConnectionDiscovered));
+            Connection.Discover("KinectServer", new SingleConnectionDiscoveryEventHandler(OnConnectionDiscovered));            
         }
         
         private void OnConnectionDiscovered(Connection connection)
