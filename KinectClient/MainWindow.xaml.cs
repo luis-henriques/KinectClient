@@ -45,7 +45,13 @@ namespace KinectClient
             InitializeKinect();
 
             Closing += new System.ComponentModel.CancelEventHandler(MainWindow_Closing);
+            kinectOffRadioButton.Checked += new RoutedEventHandler(kinectOffRadioButton_Checked);
+            kinectOnRadioButton.Checked += new RoutedEventHandler(kinectOnRadioButton_Checked);
+            connectionOnRadionButton.Checked += new RoutedEventHandler(connectionOnRadionButton_Checked);
+            connectionOffRadionButton.Checked += new RoutedEventHandler(connectionOffRadionButton_Checked);
         }
+
+
         #endregion
 
         #region Kinect Initialization
@@ -67,14 +73,15 @@ namespace KinectClient
                 { 
                     _sensor.Start();
 
-                    _sensor.ElevationAngle = -10;
-                    Thread.Sleep(100);
-                    _sensor.ElevationAngle = 10;
-                    Thread.Sleep(100);
-                    _sensor.ElevationAngle = 0;
-                    Thread.Sleep(100);
+                    //_sensor.ElevationAngle = -10;
+                    //Thread.Sleep(100);
+                    //_sensor.ElevationAngle = 10;
+                    //Thread.Sleep(100);
+                    //_sensor.ElevationAngle = 0;
+                    //Thread.Sleep(100);
 
                     this.kinectStatusBarText.Text = "Kinect Status: Ready";
+                    kinectOnRadioButton.IsChecked = true;
                 }
 
                 catch (IOException) 
@@ -86,6 +93,7 @@ namespace KinectClient
             if(_sensor == null)
             {
                 this.kinectStatusBarText.Text = "Kinect Status: No Kinect Ready Found!";
+                kinectOffRadioButton.IsChecked = true;
             }
         }
 
@@ -148,6 +156,7 @@ namespace KinectClient
                         delegate()
                         {
                             this.connectionStatusBarText.Text = "Connection Status: Connected";
+                            connectionOnRadionButton.IsChecked = true;
                         }));
 
                 this._connection.Start();
@@ -161,6 +170,7 @@ namespace KinectClient
                         delegate()
                         {
                             this.connectionStatusBarText.Text = "Connection Status: Pending";
+                            connectionOnRadionButton.IsChecked = false;
                             this.InitializeConnection();
                             //this.Close();
                         }
@@ -202,6 +212,119 @@ namespace KinectClient
             if (_sensor != null) { _sensor.Stop(); }
         }
 
+        private void Slider_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            var fe = sender as FrameworkElement;
+
+            if (null != fe)
+            {
+                if (fe.CaptureMouse())
+                {
+                    e.Handled = true;
+                }
+            }
+        }
+
+        private void Slider_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            var fe = sender as FrameworkElement;
+
+            if (null != fe)
+            {
+                if (fe.IsMouseCaptured)
+                {
+                    fe.ReleaseMouseCapture();
+                    e.Handled = true;
+                }
+
+                Int16 newTiltAngle = Int16.Parse(tiltAngleTextBox.Text);
+
+                try
+                {
+                    _sensor.ElevationAngle = newTiltAngle;
+                }
+                catch (InvalidOperationException exception)
+                {
+                    System.Console.WriteLine(exception.Message);
+                }
+            }
+        }
+
+        private void Slider_MouseMove(object sender, MouseEventArgs e)
+        {
+            var fe = sender as FrameworkElement;
+
+            if (null != fe)
+            {
+                if (fe.IsMouseCaptured)
+                {
+                    var position = Mouse.GetPosition(this.SliderTrack);
+                    int newAngle = -27 + (int)Math.Round(54.0 * (this.SliderTrack.ActualHeight - position.Y) / this.SliderTrack.ActualHeight);
+
+                    if (newAngle < -27)
+                    {
+                        newAngle = -27;
+                    }
+                    else if (newAngle > 27)
+                    {
+                        newAngle = 27;
+                    }
+                    RotateTransform rt = new RotateTransform(-2 * newAngle);
+                    SliderArrow.RenderTransform = rt;
+                    tiltAngleTextBox.Text = newAngle.ToString();
+                }
+            }
+        }
+
+        void connectionOffRadionButton_Checked(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                _connection.Stop();
+                this.connectionStatusBarText.Text = "Connection Status: Closed";
+            }
+            catch(Exception exception)
+            {
+                System.Console.WriteLine(exception.Message);
+            }
+        }
+
+        void connectionOnRadionButton_Checked(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                InitializeConnection();
+            }
+            catch(Exception exception)
+            {
+                System.Console.WriteLine(exception.Message);
+            }
+        }
+
+        void kinectOnRadioButton_Checked(object sender, RoutedEventArgs e)
+        {
+            if (!_sensor.IsRunning)
+            {
+                InitializeKinect();
+            }
+        }
+
+        void kinectOffRadioButton_Checked(object sender, RoutedEventArgs e)
+        {
+            if (_sensor.IsRunning)
+            {
+                try
+                {
+                    _sensor.Stop();
+                }
+                catch (Exception exception)
+                {
+                    System.Console.WriteLine(exception.Message);
+                }
+            }
+        }
+
         #endregion 
+
     }
 }
