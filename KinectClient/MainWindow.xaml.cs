@@ -142,7 +142,7 @@ namespace KinectClient
         {
             Connection.Discover("KinectServer", new SingleConnectionDiscoveryEventHandler(OnConnectionDiscovered));            
         }
-        
+
         private void OnConnectionDiscovered(Connection connection)
         {
             this._connection = connection;
@@ -150,7 +150,7 @@ namespace KinectClient
             if (this._connection != null)
             {
                 this._connection.MessageReceived += new ConnectionMessageEventHandler(OnMessageReceived);
-                
+
                 this.Dispatcher.Invoke(
                     new Action(
                         delegate()
@@ -161,6 +161,7 @@ namespace KinectClient
 
                 this._connection.Start();
                 connectionReady = true;
+                send = true;
             }
             else
             {
@@ -171,12 +172,48 @@ namespace KinectClient
                         {
                             this.connectionStatusBarText.Text = "Connection Status: Pending";
                             connectionOnRadionButton.IsChecked = false;
-                            this.InitializeConnection();
                             //this.Close();
                         }
                 ));
+                connectionReady = false;
+                this.InitializeConnection();
             }
         }
+        
+        //private void OnConnectionDiscovered(Connection connection)
+        //{
+        //    this._connection = connection;
+
+        //    if (this._connection != null)
+        //    {
+        //        this._connection.MessageReceived += new ConnectionMessageEventHandler(OnMessageReceived);
+                
+        //        this.Dispatcher.Invoke(
+        //            new Action(
+        //                delegate()
+        //                {
+        //                    this.connectionStatusBarText.Text = "Connection Status: Connected";
+        //                    connectionOnRadionButton.IsChecked = true;
+        //                }));
+
+        //        this._connection.Start();
+        //        connectionReady = true;
+        //    }
+        //    else
+        //    {
+        //        // Through the GUI thread, close the window
+        //        this.Dispatcher.Invoke(
+        //            new Action(
+        //                delegate()
+        //                {
+        //                    this.connectionStatusBarText.Text = "Connection Status: Pending";
+        //                    connectionOnRadionButton.IsChecked = false;
+        //                    this.InitializeConnection();
+        //                    //this.Close();
+        //                }
+        //        ));
+        //    }
+        //}
         #endregion
 
 
@@ -198,6 +235,13 @@ namespace KinectClient
 
                     case "StopKinectStream":
                         send = false;
+                        break;
+
+                    case "StandBy":
+                        send = false;
+                        //_connection.Stop();
+                        _connection = null;
+                        InitializeConnection();
                         break;
                 }
             }
