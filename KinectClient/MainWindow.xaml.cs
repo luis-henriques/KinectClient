@@ -84,8 +84,6 @@ namespace KinectClient
 
             //access saved location and orientation data from config.txt file
             LoadConfigurationFile();
-            //Location = new Point(1, 1);
-            //Orientation = 2;
 
             InitializeComponent();
             InitializeConnection();
