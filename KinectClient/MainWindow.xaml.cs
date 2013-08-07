@@ -27,6 +27,7 @@ namespace KinectClient
     public partial class MainWindow : Window
     {
         #region Class Instance Variables
+        private String KinectID;
         private Connection _connection;
         private KinectSensor _sensor;
         private SkeletonRenderer _renderer;
@@ -34,12 +35,58 @@ namespace KinectClient
 
         private bool send = true;
 
+        private Point? _Location;
+        private Point? Location
+        {
+            set
+            {
+                _Location = value;
+                UpdateConfigurationFile();
+            }
+
+            get
+            {
+                return _Location;
+            }
+        }
+
+        private Double? _Orientation;
+        private Double? Orientation
+        {
+            set
+            {
+                _Orientation = value;
+                UpdateConfigurationFile();
+            }
+            get
+            {
+                return _Orientation;
+            }
+        }
+
+        /// <summary>
+        /// The Directory of where the config file will be saved
+        /// </summary>
+        private const string CONFIGFILEDIRECTORY = "../../config/";
+
+        /// <summary>
+        /// The name of the config file
+        /// </summary>
+        private const string CONFIGFILELOCATION = CONFIGFILEDIRECTORY + "config.txt";
+
         #endregion
 
 
         #region Constructor
         public MainWindow()
         {
+            KinectID = System.Environment.MachineName;
+
+            //access saved location and orientation data from config.txt file
+            LoadConfigurationFile();
+            //Location = new Point(1, 1);
+            //Orientation = 2;
+
             InitializeComponent();
             InitializeConnection();
             InitializeKinect();
@@ -116,7 +163,7 @@ namespace KinectClient
 
                         Message message = new Message("SkeletonFrame");
                         message.AddField("Skeletons", data);
-                        message.AddField("KinectID", System.Environment.MachineName);
+                        message.AddField("KinectID", KinectID);
                         this._connection.SendMessage(message);
                     }
                 }
@@ -161,7 +208,10 @@ namespace KinectClient
 
                 this._connection.Start();
                 connectionReady = true;
-                send = true;
+                send = false;
+
+                //send location and orientation info to server here
+                sendKinectIDandLocation();
             }
             else
             {
@@ -178,42 +228,46 @@ namespace KinectClient
                 connectionReady = false;
                 this.InitializeConnection();
             }
+
         }
-        
-        //private void OnConnectionDiscovered(Connection connection)
-        //{
-        //    this._connection = connection;
 
-        //    if (this._connection != null)
-        //    {
-        //        this._connection.MessageReceived += new ConnectionMessageEventHandler(OnMessageReceived);
-                
-        //        this.Dispatcher.Invoke(
-        //            new Action(
-        //                delegate()
-        //                {
-        //                    this.connectionStatusBarText.Text = "Connection Status: Connected";
-        //                    connectionOnRadionButton.IsChecked = true;
-        //                }));
+        private void sendKinectIDandLocation()
+        {
+            Message message = new Message("NewKinect");
+            message.AddField("KinectID", KinectID);
 
-        //        this._connection.Start();
-        //        connectionReady = true;
-        //    }
-        //    else
-        //    {
-        //        // Through the GUI thread, close the window
-        //        this.Dispatcher.Invoke(
-        //            new Action(
-        //                delegate()
-        //                {
-        //                    this.connectionStatusBarText.Text = "Connection Status: Pending";
-        //                    connectionOnRadionButton.IsChecked = false;
-        //                    this.InitializeConnection();
-        //                    //this.Close();
-        //                }
-        //        ));
-        //    }
-        //}
+            if (Location != null)
+            {
+                message.AddField("LocationX", Location.Value.X);
+                message.AddField("LocationY", Location.Value.Y);
+
+                if (Orientation != null)
+                {
+                    message.AddField("Orientation", (double)Orientation);
+                }
+            }
+
+            _connection.SendMessage(message);
+
+        }
+
+        private void sendLocationAndOrientationToServer()
+        {
+            if (Location != null)
+            {
+                Message message = new Message("LocationAndOrientationOfClient");
+                message.AddField("ClientID", KinectID); 
+                message.AddField("LocationX", Location.Value.X);
+                message.AddField("LocationY", Location.Value.Y);
+
+                if (Orientation != null)
+                {
+                    message.AddField("Orientation", Orientation);
+                }
+
+                _connection.SendMessage(message);
+            }
+        }
         #endregion
 
 
@@ -242,6 +296,16 @@ namespace KinectClient
                         //_connection.Stop();
                         _connection = null;
                         InitializeConnection();
+                        break;
+
+                    case "UpdateLocation":
+                        double xValue = (double)msg.GetDoubleField("xValue");
+                        double yValue = (double)msg.GetDoubleField("yValue");
+                        Location = new Point(xValue, yValue);
+                        break;
+
+                    case "UpdateOrientation":
+                        Orientation = (double?)msg.GetDoubleField("orientation");
                         break;
                 }
             }
@@ -369,6 +433,89 @@ namespace KinectClient
         }
 
         #endregion 
+
+        #region Saving and accessing Location
+
+        private void LoadConfigurationFile()
+        {
+            if (!Directory.Exists(CONFIGFILEDIRECTORY))
+            {
+                Directory.CreateDirectory(CONFIGFILEDIRECTORY);
+            }
+
+            if (!File.Exists(CONFIGFILELOCATION))
+            {
+                System.IO.File.Create(CONFIGFILELOCATION);
+            }
+            else
+            {
+                string[] lines = File.ReadAllLines(CONFIGFILELOCATION);
+                ParseConfigurationFile(lines);
+            }
+        }
+
+        private void ParseConfigurationFile(string[] lines)
+        {
+            foreach (string line in lines)
+            {
+                string[] s = line.Split(':');
+
+                if (s.Length == 2)
+                {
+                    switch (s[0])
+                    {
+                        case "location":
+
+                            // Split on space to get multiple parameters per line
+                            string[] location = s[1].Split(' ');
+
+                            try
+                            {
+                                if (location.Length == 2)
+                                {
+                                    Location = (Point?) new System.Windows.Point(Convert.ToDouble(location[0]), Convert.ToDouble(location[1]));
+                                }
+                            }
+                            catch
+                            {
+                                Console.Write("Configuration File has invalid data for Location field");
+                            }
+
+                            break;
+                        case "orientation":
+                            try
+                            {
+                                Orientation = Convert.ToDouble(s[1]);
+                            }
+                            catch
+                            {
+                                Console.Write("Configuration File has invalid data for Orientation field");
+                            }
+                            break;
+                    }
+                }
+            }
+        }
+
+        private void UpdateConfigurationFile()
+        {
+            List<string> outputStrings = new List<string>();
+
+            if (Location != null)
+            {
+                outputStrings.Add("location:" + Location.Value.X + " " + Location.Value.Y);
+            }
+            if (Orientation != null)
+            {
+                outputStrings.Add("orientation:" + Orientation);
+            }
+
+            string[] outputString = outputStrings.ToArray();
+
+            File.WriteAllLines(CONFIGFILELOCATION, outputString);
+        }
+
+        #endregion
 
     }
 }
