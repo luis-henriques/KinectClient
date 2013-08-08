@@ -206,7 +206,6 @@ namespace KinectClient
 
                 this._connection.Start();
                 connectionReady = true;
-                send = false;
 
                 //send location and orientation info to server here
                 sendKinectIDandLocation();
@@ -224,6 +223,7 @@ namespace KinectClient
                         }
                 ));
                 connectionReady = false;
+                send = false;
                 this.InitializeConnection();
             }
 
