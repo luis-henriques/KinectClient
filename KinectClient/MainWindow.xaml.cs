@@ -452,7 +452,7 @@ namespace KinectClient
 
             if (!File.Exists(CONFIGFILELOCATION))
             {
-                System.IO.File.Create(CONFIGFILELOCATION);
+                System.IO.File.Create(CONFIGFILELOCATION).Close();
             }
             else
             {
@@ -506,7 +506,6 @@ namespace KinectClient
 
         private void UpdateConfigurationFile()
         {
-
                 List<string> outputStrings = new List<string>();
 
                 if (Location != null)
@@ -520,9 +519,8 @@ namespace KinectClient
 
                 string[] outputString = outputStrings.ToArray();
 
-
-                    File.WriteAllLines(CONFIGFILELOCATION, outputString);
-                
+            
+                File.WriteAllLines(CONFIGFILELOCATION, outputString);   
 
         }
 
