@@ -32,7 +32,6 @@ namespace KinectClient
         private KinectSensor _sensor;
         private SkeletonRenderer _renderer;
         private bool connectionReady = false;
-
         private bool send = true;
 
         private Point? _Location;
@@ -81,6 +80,7 @@ namespace KinectClient
         public MainWindow()
         {
             KinectID = System.Environment.MachineName;
+            TestKinectAvailability();
 
             //access saved location and orientation data from config.txt file
             LoadConfigurationFile();
@@ -96,6 +96,15 @@ namespace KinectClient
             connectionOffRadionButton.Checked += new RoutedEventHandler(connectionOffRadionButton_Checked);
         }
 
+        private void TestKinectAvailability()
+        {
+            // Checks to see how many Kinects are connected to the system. If none then exit.
+            if (KinectSensor.KinectSensors.Count == 0)
+            {
+                System.Windows.Forms.MessageBox.Show("No Kinect detected. Please plug in a Kinect and restart the program", "No Kinect Detected!");
+                Environment.Exit(0);
+            }
+        }
 
         #endregion
 
@@ -497,20 +506,24 @@ namespace KinectClient
 
         private void UpdateConfigurationFile()
         {
-            List<string> outputStrings = new List<string>();
 
-            if (Location != null)
-            {
-                outputStrings.Add("location:" + Location.Value.X + " " + Location.Value.Y);
-            }
-            if (Orientation != null)
-            {
-                outputStrings.Add("orientation:" + Orientation);
-            }
+                List<string> outputStrings = new List<string>();
 
-            string[] outputString = outputStrings.ToArray();
+                if (Location != null)
+                {
+                    outputStrings.Add("location:" + Location.Value.X + " " + Location.Value.Y);
+                }
+                if (Orientation != null)
+                {
+                    outputStrings.Add("orientation:" + Orientation);
+                }
 
-            File.WriteAllLines(CONFIGFILELOCATION, outputString);
+                string[] outputString = outputStrings.ToArray();
+
+
+                    File.WriteAllLines(CONFIGFILELOCATION, outputString);
+                
+
         }
 
         #endregion
