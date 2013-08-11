@@ -506,21 +506,27 @@ namespace KinectClient
 
         private void UpdateConfigurationFile()
         {
-                List<string> outputStrings = new List<string>();
+            List<string> outputStrings = new List<string>();
 
-                if (Location != null)
-                {
-                    outputStrings.Add("location:" + Location.Value.X + " " + Location.Value.Y);
-                }
-                if (Orientation != null)
-                {
-                    outputStrings.Add("orientation:" + Orientation);
-                }
+            if (Location != null)
+            {
+                outputStrings.Add("location:" + Location.Value.X + " " + Location.Value.Y);
+            }
+            if (Orientation != null)
+            {
+                outputStrings.Add("orientation:" + Orientation);
+            }
 
-                string[] outputString = outputStrings.ToArray();
+            string[] outputString = outputStrings.ToArray();
 
-            
-                File.WriteAllLines(CONFIGFILELOCATION, outputString);   
+            try
+            {
+                File.WriteAllLines(CONFIGFILELOCATION, outputString);
+            }
+            catch (IOException exception)
+            {
+                System.Console.WriteLine(exception.Message);
+            }
 
         }
 
