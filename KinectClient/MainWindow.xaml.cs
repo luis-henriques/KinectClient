@@ -32,7 +32,7 @@ namespace KinectClient
         private KinectSensor _sensor;
         private SkeletonRenderer _renderer;
         private bool connectionReady = false;
-        private bool send = true;
+        private bool send = false;
 
         private Point? _Location;
         private Point? Location
@@ -217,7 +217,7 @@ namespace KinectClient
 
                 this._connection.Start();
                 connectionReady = true;
-                send = true;
+                //send = false;
 
                 //send location and orientation info to server here
                 sendKinectIDandLocation();
