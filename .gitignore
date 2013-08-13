@@ -45,6 +45,7 @@ config.txt
 
 # Build results
 
+config/
 [Dd]ebug/
 [Rr]elease/
 x64/

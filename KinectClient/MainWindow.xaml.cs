@@ -171,7 +171,9 @@ namespace KinectClient
                         Message message = new Message("SkeletonFrame");
                         message.AddField("Skeletons", data);
                         message.AddField("KinectID", KinectID);
-                        this._connection.SendMessage(message);
+                        
+                        if(this._connection!=null)
+                            this._connection.SendMessage(message);
                     }
                 }
             }
@@ -215,6 +217,7 @@ namespace KinectClient
 
                 this._connection.Start();
                 connectionReady = true;
+                send = true;
 
                 //send location and orientation info to server here
                 sendKinectIDandLocation();
