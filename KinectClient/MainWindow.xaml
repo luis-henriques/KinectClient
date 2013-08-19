@@ -13,8 +13,6 @@
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Window.Resources>
-
-    <!--TODO Add Kinect Connection Detection-->
         
     <Grid Name="grid">
         <!--Row Definitions-->
@@ -36,7 +34,7 @@
         <!--Title Bar-->
         <DockPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Margin="0 0 0 20">
             <Image DockPanel.Dock="Left" Source="Images\MSEAPI.png" Stretch="Fill" Height="81" Width="243" Margin="0 10 0 5"/>
-            <TextBlock DockPanel.Dock="Right" Margin="0 0 0 0" 
+            <TextBlock DockPanel.Dock="Right" Margin="0 0 5 0" 
                        VerticalAlignment="Center" HorizontalAlignment="Right" 
                        Foreground="Gray" FontFamily="Segoe UI" FontSize="18">
                 Kinect Client
@@ -45,9 +43,12 @@
         
         <!--Main Viewer-->
         <Viewbox Grid.Row="1" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Top">
+            <Image Name="depthImage" Width="640" Height="480"/>
+        </Viewbox>
+        <Viewbox Grid.Row="1" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Top">
             <Image Name="skeletonImage" Width="640" Height="480"/>
         </Viewbox>
-
+        
         <!--Kinect Status Bar-->
         <StatusBar Grid.Row="2" HorizontalAlignment="Stretch" Name="kinectStatusBar" 
                    VerticalAlignment="Bottom" Background="White" Foreground="Gray">

@@ -27,13 +27,50 @@ namespace KinectClient
     public partial class MainWindow : Window
     {
         #region Class Instance Variables
+
+        /// <summary>
+        /// Stores the ID assigned to the Kinect sensor
+        /// </summary>
         private String KinectID;
+
+        /// <summary>
+        /// The permanent connection to the server
+        /// </summary>
         private Connection _connection;
+
+        /// <summary>
+        /// Kinect sensor
+        /// </summary>
         private KinectSensor _sensor;
-        private SkeletonRenderer _renderer;
+
+        /// <summary>
+        /// Renders received skeleton frames
+        /// </summary>
+        private SkeletonRenderer _skeletonRenderer;
+
+        /// <summary>
+        /// Renders received depth frames
+        /// </summary>
+        private DepthRenderer _depthRenderer;
+
+        /// <summary>
+        /// Connection ready flag
+        /// </summary>
         private bool connectionReady = false;
+
+        /// <summary>
+        /// Start sending flag
+        /// </summary>
         private bool send = false;
 
+        /// <summary>
+        /// Standby timer 
+        /// </summary>
+        System.Windows.Threading.DispatcherTimer standbyTimer = new System.Windows.Threading.DispatcherTimer();
+
+        /// <summary>
+        /// Stores the location of the Kinect client
+        /// </summary>
         private Point? _Location;
         private Point? Location
         {
@@ -49,6 +86,9 @@ namespace KinectClient
             }
         }
 
+        /// <summary>
+        /// Stores the orientation of the Kinect client
+        /// </summary>
         private Double? _Orientation;
         private Double? Orientation
         {
@@ -75,7 +115,6 @@ namespace KinectClient
 
         #endregion
 
-
         #region Constructor
         public MainWindow()
         {
@@ -85,27 +124,22 @@ namespace KinectClient
             //access saved location and orientation data from config.txt file
             LoadConfigurationFile();
 
+            //Connection Lost timer
+            standbyTimer.Tick += new EventHandler(InitializeConnectionAfterTimer);
+            standbyTimer.Interval = new TimeSpan(0, 0, 1);
+
+            // Initialization
             InitializeComponent();
             InitializeConnection();
             InitializeKinect();
 
+            // Event Handlers
             Closing += new System.ComponentModel.CancelEventHandler(MainWindow_Closing);
             kinectOffRadioButton.Checked += new RoutedEventHandler(kinectOffRadioButton_Checked);
             kinectOnRadioButton.Checked += new RoutedEventHandler(kinectOnRadioButton_Checked);
             connectionOnRadionButton.Checked += new RoutedEventHandler(connectionOnRadionButton_Checked);
             connectionOffRadionButton.Checked += new RoutedEventHandler(connectionOffRadionButton_Checked);
         }
-
-        private void TestKinectAvailability()
-        {
-            // Checks to see how many Kinects are connected to the system. If none then exit.
-            if (KinectSensor.KinectSensors.Count == 0)
-            {
-                System.Windows.Forms.MessageBox.Show("No Kinect detected. Please plug in a Kinect and restart the program", "No Kinect Detected!");
-                Environment.Exit(0);
-            }
-        }
-
         #endregion
 
         #region Kinect Initialization
@@ -117,23 +151,19 @@ namespace KinectClient
                 break;
             }
 
+            // Check if a Kinect sensor was discovered
             if (_sensor != null)
             {
                 _sensor.SkeletonStream.Enable();
                 _sensor.DepthStream.Enable();
+                _sensor.DepthFrameReady += new EventHandler<DepthImageFrameReadyEventArgs>(_sensor_DepthFrameReady);
                 _sensor.SkeletonFrameReady += new EventHandler<SkeletonFrameReadyEventArgs>(_sensor_SkeletonFrameReady);
 
                 try 
                 { 
                     _sensor.Start();
 
-                    //_sensor.ElevationAngle = -10;
-                    //Thread.Sleep(100);
-                    //_sensor.ElevationAngle = 10;
-                    //Thread.Sleep(100);
-                    //_sensor.ElevationAngle = 0;
-                    //Thread.Sleep(100);
-
+                    // Change Kinect status
                     this.kinectStatusBarText.Text = "Kinect Status: Ready";
                     kinectOnRadioButton.IsChecked = true;
                 }
@@ -146,9 +176,18 @@ namespace KinectClient
             
             if(_sensor == null)
             {
+                // Change Kinect status
                 this.kinectStatusBarText.Text = "Kinect Status: No Kinect Ready Found!";
                 kinectOffRadioButton.IsChecked = true;
             }
+        }
+
+        void _sensor_DepthFrameReady(object sender, DepthImageFrameReadyEventArgs e)
+        {
+            this.Dispatcher.Invoke(new Action(delegate()
+            {
+                _depthRenderer = new DepthRenderer(depthImage, e, _sensor);
+            }));
         }
 
         void _sensor_SkeletonFrameReady(object sender, SkeletonFrameReadyEventArgs e)
@@ -159,7 +198,7 @@ namespace KinectClient
                 {
                     this.Dispatcher.Invoke(new Action(delegate()
                     {
-                        _renderer = new SkeletonRenderer(skeletonImage, e, _sensor);
+                        _skeletonRenderer = new SkeletonRenderer(skeletonImage, e, _sensor);
                     }));
 
                     if (send && connectionReady)
@@ -181,6 +220,11 @@ namespace KinectClient
         #endregion
 
         #region Helper Functions
+        /// <summary>
+        /// Converts an arbitrary object type to a Byte array
+        /// </summary>
+        /// <param name="obj">Object to be converted</param>
+        /// <returns>Byte array representation of the passed object</returns>
         private byte[] objectToByteArray(Object obj)
         {
             if (obj == null)
@@ -190,6 +234,19 @@ namespace KinectClient
             bf.Serialize(ms, obj);
 
             return ms.ToArray();
+        }
+
+        /// <summary>
+        /// Runs a Kinect check and exits if none detected
+        /// </summary>
+        private void TestKinectAvailability()
+        {
+            // Checks to see how many Kinects are connected to the system. If none then exit.
+            if (KinectSensor.KinectSensors.Count == 0)
+            {
+                System.Windows.Forms.MessageBox.Show("No Kinect detected. Please plug in a Kinect and restart the program", "No Kinect Detected!");
+                Environment.Exit(0);
+            }
         }
         #endregion
 
@@ -217,7 +274,6 @@ namespace KinectClient
 
                 this._connection.Start();
                 connectionReady = true;
-                //send = false;
 
                 //send location and orientation info to server here
                 sendKinectIDandLocation();
@@ -230,8 +286,7 @@ namespace KinectClient
                         delegate()
                         {
                             this.connectionStatusBarText.Text = "Connection Status: Pending";
-                            connectionOnRadionButton.IsChecked = false;
-                            //this.Close();
+                            connectionOnRadionButton.IsChecked = false;                            
                         }
                 ));
                 connectionReady = false;
@@ -280,7 +335,6 @@ namespace KinectClient
         }
         #endregion
 
-
         #region Received Messsage Handler
         // Handles and reacts to messages received by the client
         private void OnMessageReceived(object sender, Message msg)
@@ -303,9 +357,8 @@ namespace KinectClient
 
                     case "StandBy":
                         send = false;
-                        //_connection.Stop();
                         _connection = null;
-                        InitializeConnection();
+                        standbyTimer.Start();
                         break;
 
                     case "UpdateLocation":
@@ -320,16 +373,35 @@ namespace KinectClient
                 }
             }
         }
+
+        private void InitializeConnectionAfterTimer(object sender, EventArgs e)
+        {
+            InitializeConnection();
+            standbyTimer.Stop();
+        }
+
         #endregion
 
         #region Window Event Handlers
-        
+        /// <summary>
+        /// Handles clean exiting of the program 
+        /// </summary>
+        /// <param name="sender">Window object</param>
+        /// <param name="e">Cancel event args</param>
         void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             if (_connection != null) { _connection.Stop(); }
             if (_sensor != null) { _sensor.Stop(); }
+            Environment.Exit(0);
         }
+        #endregion
 
+        #region Kinect Tilt Angle Control
+        /// <summary>
+        /// Captures the start of slider move
+        /// </summary>
+        /// <param name="sender">Slider object</param>
+        /// <param name="e">Mouse button event args</param>
         private void Slider_MouseDown(object sender, MouseButtonEventArgs e)
         {
             var fe = sender as FrameworkElement;
@@ -343,6 +415,11 @@ namespace KinectClient
             }
         }
 
+        /// <summary>
+        /// Changes the tilt angle of the sensor
+        /// </summary>
+        /// <param name="sender">Slider object</param>
+        /// <param name="e">Mouse button event args</param>
         private void Slider_MouseUp(object sender, MouseButtonEventArgs e)
         {
             var fe = sender as FrameworkElement;
@@ -368,6 +445,11 @@ namespace KinectClient
             }
         }
 
+        /// <summary>
+        /// Changes tilt angle as the slider moves
+        /// </summary>
+        /// <param name="sender">Slider object</param>
+        /// <param name="e">Mouse event args</param>
         private void Slider_MouseMove(object sender, MouseEventArgs e)
         {
             var fe = sender as FrameworkElement;
@@ -393,12 +475,23 @@ namespace KinectClient
                 }
             }
         }
+        #endregion
 
+        #region Connection Status Controls
+
+        /// <summary>
+        /// Turns the connection off
+        /// </summary>
+        /// <param name="sender">Radio button object</param>
+        /// <param name="e">Routed event args</param>
         void connectionOffRadionButton_Checked(object sender, RoutedEventArgs e)
         {
             try
             {
-                _connection.Stop();
+                if (_connection != null)
+                {
+                    _connection.Stop();
+                }
                 this.connectionStatusBarText.Text = "Connection Status: Closed";
             }
             catch(Exception exception)
@@ -407,18 +500,32 @@ namespace KinectClient
             }
         }
 
+        /// <summary>
+        /// Turns the connection on
+        /// </summary>
+        /// <param name="sender">Radio button object</param>
+        /// <param name="e">Routed event args</param>
         void connectionOnRadionButton_Checked(object sender, RoutedEventArgs e)
         {
             try
             {
                 InitializeConnection();
+                this.connectionStatusBarText.Text = "Connection Status: Connected";
             }
             catch(Exception exception)
             {
                 System.Console.WriteLine(exception.Message);
             }
         }
+        #endregion
 
+        #region Kinect Status Controls
+
+        /// <summary>
+        /// Turns the Kinect on
+        /// </summary>
+        /// <param name="sender">Radio button object</param>
+        /// <param name="e">Routed event args</param>
         void kinectOnRadioButton_Checked(object sender, RoutedEventArgs e)
         {
             if (!_sensor.IsRunning)
@@ -427,6 +534,11 @@ namespace KinectClient
             }
         }
 
+        /// <summary>
+        /// Turns the Kinect off
+        /// </summary>
+        /// <param name="sender">Radio button object</param>
+        /// <param name="e">Routed event args</param>
         void kinectOffRadioButton_Checked(object sender, RoutedEventArgs e)
         {
             if (_sensor.IsRunning)
@@ -441,8 +553,7 @@ namespace KinectClient
                 }
             }
         }
-
-        #endregion 
+        #endregion        
 
         #region Saving and accessing Location
 
